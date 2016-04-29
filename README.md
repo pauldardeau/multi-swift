@@ -19,9 +19,9 @@ of swift?
     - Cache Directories: /var/cache/swift
     - Temp Directories: /tmp/log/swift
 * ports
-    All the ports for the second swift cluster have been modified to start with a series if 67**
+  - All the ports for the second swift cluster have been modified to start with a series if 67**
 * devices
-    Both the swift clusters have separate disks that are mounted on separate mount points. We've got to modify the ringbuilder commands accordingly
+  - Both the swift clusters have separate disks that are mounted on separate mount points. We've got to modify the ringbuilder commands accordingly
 * memcached
-    Both the swift instances need to separate memcached instance configured to listen on separate ports (11211 & 11212)
+  - Both the swift instances need to separate memcached instance configured to listen on separate ports (11211 & 11212)
 
