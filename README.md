@@ -13,7 +13,7 @@ of swift?
 
 ## Required Changes ##
 * paths
-  - Various paths such as
+  - Various paths listed below need to be separated: 
     - Configuration paths: /etc/swift
     - Run Directories: /var/run/swift
     - Cache Directories: /var/cache/swift
