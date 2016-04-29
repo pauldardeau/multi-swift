@@ -1,4 +1,4 @@
-# multi-swift
+# Dual-Swift 
 Multi-swift is the idea of running multiple swift clusters on shared hardware.
 The current implementation shows two swift all in one clusters running on shared OS and Hardware
 
@@ -14,10 +14,10 @@ of swift?
 ## Required Changes ##
 * paths
     Various paths such as
-        * Configuration paths: /etc/swift
-        * Run Directories: /var/run/swift
-        * Cache Directories: /var/cache/swift
-        * Temp Directories: /tmp/log/swift
+        - Configuration paths: /etc/swift
+        - Run Directories: /var/run/swift
+        - Cache Directories: /var/cache/swift
+        - Temp Directories: /tmp/log/swift
 * ports
     All the ports for the second swift cluster have been modified to start with a series if 67**
 * devices
