@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#*************************************************************************************************
+#   THIS IS A DRAFT OF THE SETUP SCRIPT FOR DUAL SAIO INSTALLATIONS SHARING THE SAME HARDWARE
+# This script may not be fully functional yet. I will be updating it regularly. This script requires
+# you to run ass users script first.
+#*************************************************************************************************
 SWIFT1_USER="swift1"
 SWIFT2_USER="swift2"
 SWIFT_GROUP="swift"
