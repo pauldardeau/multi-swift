@@ -191,8 +191,7 @@ cd ${SWIFT2_REPO_DIR}/doc/saio/bin; sudo cp * ${SWIFT2_USER_LOCAL_BIN}; cd -
 
 cd ${SWIFT1_USER_LOCAL_BIN}; 
 sudo rm resetswift;
-cat >> resetswift
-#!/bin/bash
+cat >> resetswift << EOF
 
 swift-init all stop
 # Remove the following line if you did not set up rsyslog for individual logging:
@@ -229,9 +228,7 @@ EOF
 
 cd ${SWIFT2_USER_LOCAL_BIN};
 sudo rm resetswift;
-cat >> resetswift
-
-#!/bin/bash
+cat >> resetswift << EOF
 
 swift-init all stop
 # Remove the following line if you did not set up rsyslog for individual logging:
@@ -262,6 +259,7 @@ else
     sudo service rsyslog restart
     sudo /etc/init.d/memcached restart swift2
 fi
+
 EOF
 
 sudo chmod +x ${SWIFT1_USER_LOCAL_BIN}/*
