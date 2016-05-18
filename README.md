@@ -56,8 +56,11 @@ ports and services dedicated to each of them
    separated for both the clusters. The port is hardcoded in the Swift code, and we can change the swift2 cluster to listen on separate port
     - swift1 memcached port: 11211
     - swift2 memcached port: 11212
+  - Please refer to /etc/init.d/memcache file's "usage" section to create separate memcache configs and run the service
 
 * rsyslog
   - rsyslog daemon also needs to be separated for both the clusters in order to enable logging separately for both the clustres. This can be achieved using "facility"
-    feature in rsyslog
+    feature in rsyslog. The same facility needs to be updated in the /etc/swift conf files to log the service logs to their appropriate locations.
 
+## TODO
+The current scripts need further refinement in terms of sed commands and more documentation.

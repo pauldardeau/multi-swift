@@ -269,6 +269,10 @@ sudo chmod +x ${SWIFT2_USER_LOCAL_BIN}/*
 
 #**********************************************************************************************
 #MODIFICATIONS TO THE SECOND REPOSITORY
+# Changing the ports to 60** to 67** series
+# and modifying the paths to suit swift2
+#
+#TODO: refine sed scripts to work efficiently and avoid the rework of replacing the wrong updates
 #**********************************************************************************************
 
 cd ${SWIFT1_REPO_DIR}; su - swift1;
