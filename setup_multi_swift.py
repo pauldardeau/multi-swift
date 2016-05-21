@@ -145,22 +145,22 @@ def replace_all(s, replacements):
     print('replace_all: %s %s' % (s, repr(replacements)))
 
 
-def fs_type(opts):
+def swift_fs_type(opts):
     return opts[SWIFT_FS_TYPE]
 
 
-def mount_options(opts):
+def swift_mount_options(opts):
     return opts[SWIFT_MOUNT_OPTIONS]
 
 
 def fstab_entry(opts, disk_number, device):
     device_spec = '%s/%s-disk%d' % (swift_disk_base_dir(opts), swift_user(opts), disk_number)
     mount_point = '%s/sdb2' % swift_mount_base_dir(opts)  #TODO: fstab_entry: fix sdb2
-    return '%s %s %s %s' % (device_spec,mount_point,fs_type(opts),mount_options(opts))
+    return '%s %s %s %s' % (device_spec,mount_point,swift_fs_type(opts),swift_mount_options(opts))
 
 
 def mkfs_command(opts):
-    return 'mkfs.' + fs_type(opts)
+    return 'mkfs.' + swift_fs_type(opts)
 
 
 def swift_user(opts):
@@ -222,8 +222,8 @@ def create_disks(opts):
 
 def setup_fstab_entries(opts):
     fstab_entries = ''
-    fs_type = 'xfs'
-    mount_options = 'loop,noatime,nodiratime,nobarrier,logbufs=8 0 0'
+    fs_type = swift_fs_type(opts) 
+    mount_options = swift_mount_options(opts)
     user = swift_user(opts)
     mount_base_dir = swift_mount_base_dir(opts)
     disk_base_dir = swift_disk_base_dir(opts)
