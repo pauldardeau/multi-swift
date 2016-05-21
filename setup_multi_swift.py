@@ -4,8 +4,10 @@
 
 import os
 import os.path
+import pwd
+import shutil
 
-
+GB_BYTES = 1024 * 1024 * 1024
 SWIFT_USER_NAME = 'swift_user'
 SWIFT_GROUP_NAME = 'swift_group'
 SWIFT_HOME_BASE_DIR = 'swift_home_base_dir'
@@ -43,8 +45,10 @@ def create_file_system(fs_path):
 
 
 def create_file_with_gb_size(file_path, gb_size):
-    #TODO: implement create_file_with_gb_size
-    print('create_file_with_gb_size: %s %s' % (file_path, gb_size))
+    gb_size_in_bytes = GB_BYTES * gb_size
+    print('create_file_with_gb_size: %s %s (%s)' % (file_path, gb_size, str(gb_size_in_bytes)))
+    #with open(file_path, 'w') as f:
+    #    f.truncate(gb_size_in_bytes)
 
 
 def file_exists(file_path):
@@ -53,8 +57,8 @@ def file_exists(file_path):
 
 
 def delete_file(file_to_delete):
-    #TODO: implement delete_file
     print('delete_file: %s' % file_to_delete)
+    #os.remove(file_to_delete)
 
 
 def delete_file_if_exists(file_to_delete):
@@ -64,8 +68,8 @@ def delete_file_if_exists(file_to_delete):
 
 
 def copy_file(src_file, dest):
-    #TODO: implement copy_file
     print('copy_file: %s %s' % (src_file, dest))
+    #shutil.copy(src_file, dest)
 
 
 def copy_all(src_dir, dest_dir, recurse=False):
@@ -74,15 +78,16 @@ def copy_all(src_dir, dest_dir, recurse=False):
 
 
 def append_to_file(text_to_append, file_path):
-    #TODO: implement append_to_file
     print('append_to_file: %s' % file_path)
     print(text_to_append)
+    #with open(file_path, "a") as f:
+    #    f.write(text_to_append)
 
 
 def change_owner(file_path, user_name, group_name, recurse=False):
-    #TODO: get uid for user_name
-    #TODO: get gid for group_name
     print('change_owner: %s (%s,%s)' % (file_path, user_name, group_name))
+    #uid = pwd.getpwnam(user_name).pw_uid
+    #gid = pwd.getpwnam(user_name).pw_gid
     #os.chown(file_path, uid, gid)
 
 
@@ -113,11 +118,11 @@ def create_dir(dir_path):
 
 def dir_replace_all(dir_path, replacements):
     """Replace all occurrences for all files in specified directory"""
-    #TODO: enumerate all files in dir_path
-    #TODO: if file is a text file (if this can be easily determined)
-    #TODO: read file contents
-    #TODO: call replace_all
-    #TODO: if file contents are changed, re-write file
+    #TODO: dir_replace_all: enumerate all files in dir_path
+    #TODO: dir_replace_all: if file is a text file (if this can be easily determined)
+    #TODO: dir_replace_all: read file contents
+    #TODO: dir_replace_all: call replace_all
+    #TODO: dir_replace_all: if file contents are changed, re-write file
     print('dir_replace_all: %s %s' % (dir_path, repr(replacements)))
 
 
@@ -140,7 +145,7 @@ def mount_options(opts):
 
 def fstab_entry(opts, disk_number, device):
     device_spec = '%s/%s-disk%d' % (swift_disk_base_dir(opts), swift_user(opts), disk_number)
-    mount_point = '%s/sdb2' % swift_mount_base_dir(opts)  #TODO: fix sdb2
+    mount_point = '%s/sdb2' % swift_mount_base_dir(opts)  #TODO: fstab_entry: fix sdb2
     return '%s %s %s %s' % (device_spec,mount_point,fs_type(opts),mount_options(opts))
 
 
@@ -242,10 +247,12 @@ def swift_create_directories(opts):
     # good idea to have backup of fstab before we modify it
     copy_file('/etc/fstab', '/etc/fstab_insert_%s' % user_name)
 
+    gb_size_as_int = int(swift_disk_size_gb(opts))
+
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
         disk_path = '%s/%s-disk%s' % (disk_base_dir, user_name, disk_num)
-        create_file_with_gb_size(disk_path, swift_disk_size_gb(opts))
+        create_file_with_gb_size(disk_path, gb_size_as_int)
         create_file_system(disk_path)
 
     setup_fstab_entries(opts)
