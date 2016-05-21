@@ -22,6 +22,7 @@ SWIFT_CACHE_BASE_DIR = 'swift_cache_base_dir'
 SWIFT_REMOTE_REPO = 'swift_remote_repo'
 SWIFT_MOUNT_OPTIONS = 'swift_mount_options'
 SWIFT_MKFS_OPTIONS = 'swift_mkfs_options'
+SWIFT_HOME_LOCAL_BIN = 'swift_home_local_bin'
 
 
 def swift_disk_count(opts):
@@ -44,6 +45,22 @@ def create_file_system(fs_path):
 def create_file_with_gb_size(file_path, gb_size):
     #TODO: implement create_file_with_gb_size
     print('create_file_with_gb_size: %s %s' % (file_path, gb_size))
+
+
+def file_exists(file_path):
+    print('checking_file_exists: %s' % file_path)
+    return os.path.isfile(file_path)
+
+
+def delete_file(file_to_delete):
+    #TODO: implement delete_file
+    print('delete_file: %s' % file_to_delete)
+
+
+def delete_file_if_exists(file_to_delete):
+    print('delete_file_if_exists: %s' % file_to_delete)
+    if file_exists(file_to_delete):
+        delete_file(file_to_delete)
 
 
 def copy_file(src_file, dest):
@@ -101,12 +118,16 @@ def dir_replace_all(dir_path, replacements):
     #TODO: read file contents
     #TODO: call replace_all
     #TODO: if file contents are changed, re-write file
-    pass
+    print('dir_replace_all: %s %s' % (dir_path, repr(replacements)))
+
+
+def dir_replace(dir_path, file_spec, replacements):
+    print('dir_replace: %s %s %s' % (dir_path, file_spec, repr(replacements)))
 
 
 def replace_all(s, replacements):
     #TODO: implement replace_all
-    pass
+    print('replace_all: %s %s' % (s, repr(replacements)))
 
 
 def fs_type(opts):
@@ -151,6 +172,10 @@ def swift_home_dir(opts):
     return os.path.join(opts[SWIFT_HOME_BASE_DIR], swift_user(opts))
 
 
+def swift_home_local_bin_dir(opts):
+    return os.path.join(swift_home_dir(opts), opts[SWIFT_HOME_LOCAL_BIN])
+
+
 def swift_egg_cache_dir(opts):
     return os.path.join(swift_home_dir(opts), 'tmp')
 
@@ -180,6 +205,22 @@ def create_disks(opts):
     pass
 
 
+def setup_fstab_entries(opts):
+    fstab_entries = ''
+    fs_type = 'xfs'
+    mount_options = 'loop,noatime,nodiratime,nobarrier,logbufs=8 0 0'
+    user = swift_user(opts)
+    mount_base_dir = swift_mount_base_dir(opts)
+    disk_base_dir = swift_disk_base_dir(opts)
+    for x in range(swift_disk_count(opts)):
+        device_spec = '%s/%s-disk1' % (disk_base_dir, user)
+        mount_point = '%s/sdb1' % (mount_base_dir)
+        fs_entry = '%s %s %s %s\n' % (device_spec, mount_point, fs_type, mount_options)
+        fstab_entries += fs_entry
+
+    append_to_file(fstab_entries, '/etc/fstab')
+
+
 def swift_create_directories(opts):
     config_dir = swift_config_dir(opts)
     run_dir = swift_run_dir(opts)
@@ -205,23 +246,9 @@ def swift_create_directories(opts):
         disk_num = '%d' % (x+1)
         disk_path = '%s/%s-disk%s' % (disk_base_dir, user_name, disk_num)
         create_file_with_gb_size(disk_path, swift_disk_size_gb(opts))
-        #truncate -s "${SWIFT_DISK_SIZE_GB}GB" "${SWIFT1_DISK}"
-        #mkfs_command(opts) -f "${SWIFT1_DISK}"
         create_file_system(disk_path)
 
-    #==================   START  ====================
-    fstab_append = """
-    /srv/swift1-disk1 /mnt/sdb1 fs_type(opts) loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    /srv/swift1-disk2 /mnt/sdb2 xfs loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    /srv/swift1-disk3 /mnt/sdb3 xfs loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    /srv/swift1-disk4 /mnt/sdb4 xfs loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    /srv/swift1-disk5 /mnt/sdb5 xfs loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    /srv/swift1-disk6 /mnt/sdb6 xfs loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    /srv/swift1-disk7 /mnt/sdb7 xfs loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    /srv/swift1-disk8 /mnt/sdb8 xfs loop,noatime,nodiratime,nobarrier,logbufs=8 0 0
-    """
-    append_to_file(fstab_append, '/etc/fstab')
-    #==================   STOP  =====================
+    setup_fstab_entries(opts)
 
     mount_base_dir = swift_mount_base_dir(opts)
 
@@ -232,25 +259,24 @@ def swift_create_directories(opts):
         mount_dir = '%s/sdb%s/%s_%s' % (mount_base_dir, disk_num, user_name, disk_num)
         create_dir(mount_dir) 
         change_owner(mount_dir, user_name, group_name)
-        #sudo ln -s ${SWIFT1_MOUNT_DIR} ${SWIFT1_DISK_DIR}
-        #sudo chown -h ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
+        #ln -s ${SWIFT1_MOUNT_DIR} ${SWIFT1_DISK_DIR}
+        #chown -h ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
 
     cache_base_dir = swift_cache_base_dir(opts)
     create_dir(cache_base_dir)
 
-    #sudo mount -a
+    #mount -a
 
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
-        #sudo mkdir -p ${SWIFT_DISK_BASE_DIR}/swift1_${x}/node/sdb${x}
-        #sudo mkdir -p ${SWIFT_DISK_BASE_DIR}/swift2_${x}/node/sdc${x}
+        dir_path = '%s/%s_%s/node/sdb%s' % (disk_base_dir, user_name, disk_num, disk_num)
+        create_dir(dir_path)
 
     #PJD: SWIFT1_DISK_DIR doesn't seem correct here
-    #sudo chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
+    #chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
     change_owner(SWIFT1_DISK_DIR, user_name, group_name, True)
 
-#***********************************************************************************************
-
+#******************************************************************************
 
 #SWIFT1_USER_HOME="/home/${SWIFT1_USER}"
 #SWIFT1_USER_LOCAL_BIN="${SWIFT1_USER_HOME}/.local/bin"
@@ -258,6 +284,7 @@ def swift_create_directories(opts):
 #SWIFT1_LOGIN_CONFIG="${SWIFT1_USER_HOME}/.bashrc"
 #SWIFT1_REPO_DIR="${SWIFT1_USER_HOME}/swift"
 
+#******************************************************************************
 
 def setup_local_swift_repo(opts):
     user_home_dir = swift_home_dir(opts)
@@ -268,7 +295,6 @@ def setup_local_swift_repo(opts):
     exec_as_user(cmd, swift_user(opts))
 
 
-#adding env variables to bashrc
 def setup_bashrc(opts):
     env_var_stmts = '' 
     #env_var_stmts += 'export SAIO_BLOCK_DEVICE=%s' % ??? 
@@ -276,14 +302,13 @@ def setup_bashrc(opts):
     env_var_stmts += 'export PATH=${PATH}:$HOME/.local/bin'
     env_var_stmts += 'export PYTHON_EGG_CACHE=%s' % swift_egg_cache_dir(opts)
     append_to_file(env_var_stmts, login_config_file(opts))
-
+    disk_base_dir = swift_disk_base_dir(opts)
     #echo "export SAIO_BLOCK_DEVICE=/srv/swift-disk1" >> ${SWIFT1_LOGIN_CONFIG}
     #echo "export SWIFT_TEST_CONFIG_FILE=/etc/swift1/test.conf" >> ${SWIFT1_LOGIN_CONFIG}
     #echo "export PATH=${PATH}:$HOME/.local/bin" >> ${SWIFT1_LOGIN_CONFIG}
     #echo "export PYTHON_EGG_CACHE=/home/swift/tmp" >> ${SWIFT1_LOGIN_CONFIG}
 
 
-#Copying Configs to Config Directory
 def swift_setup_configs(opts):
     repo_dir = swift_local_repo(opts)
     copy_file(os.path.join(repo_dir,'test/sample.conf'),
@@ -299,133 +324,106 @@ def swift_setup_configs(opts):
 
     change_owner(config_dir, user, group, True)
 
-    """
-    find ${SWIFT1_CONFIG_DIR}/ -name \*.conf | xargs sed -i "s/<your-user-name>/${SWIFT1_USER}/"
+    disk_base_dir = swift_disk_base_dir(opts)
 
-    cd ${SWIFT1_CONFIG_DIR};
-    sudo find . -type f -exec sed -i 's/\/srv\/1\/node/\/srv\/swift1_1\/node/g' {} \;
-    sudo find . -type f -exec sed -i 's/\/srv\/2\/node/\/srv\/swift1_2\/node/g' {} \;
-    sudo find . -type f -exec sed -i 's/\/srv\/3\/node/\/srv\/swift1_3\/node/g' {} \;
-    sudo find . -type f -exec sed -i 's/\/srv\/4\/node/\/srv\/swift1_4\/node/g' {} \;
-    sudo find . -type f -exec sed -i 's/swift12/swift1/g' {} \;
-    sudo find . -type f -exec sed -i 's/swift13/swift1/g' {} \;
-    sudo find . -type f -exec sed -i 's/swift14/swift1/g' {} \;
-    """
+    search_replace = {}
+    search_replace['<your-user-name>'] = user
+    dir_replace(config_dir, '*.conf', search_replace)
+
+    search_replace = {}
+    search_replace['/srv/1/node'] = '%s/%s_1/node' % (disk_base_dir, user)
+    search_replace['/srv/2/node'] = '%s/%s_2/node' % (disk_base_dir, user)
+    search_replace['/srv/3/node'] = '%s/%s_3/node' % (disk_base_dir, user)
+    search_replace['/srv/4/node'] = '%s/%s_4/node' % (disk_base_dir, user)
+    dir_replace_all(config_dir, search_replace)
+
+    home_local_bin = swift_home_local_bin_dir(opts)
 
     """
     EXPORT_SWIFT1_PATH="export PATH=${PATH}:${SWIFT1_USER_LOCAL_BIN}:${SWIFT1_USER_HOME}/swift/bin"
 
     su - ${SWIFT1_USER} -c 'cd ${SWIFT1_USER_HOME}/swift;'
-    sudo python setup.py develop --user
+    python setup.py develop --user
     #PJD: mistake on next line (mixup of SWIFT1 and SWIFT2)
-    cd ${SWIFT1_USER_HOME}; sudo chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT2_USER_LOCAL_BIN}
+    cd ${SWIFT1_USER_HOME}; chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT2_USER_LOCAL_BIN}
     cd ${SWIFT1_REPO_DIR}/doc/saio/bin; cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
 
-    cd ${SWIFT1_REPO_DIR}/doc/saio/bin; sudo cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
+    cd ${SWIFT1_REPO_DIR}/doc/saio/bin; cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
 
     cd ${SWIFT1_USER_LOCAL_BIN}; 
-    sudo rm resetswift;
+    rm resetswift;
     """
+    file_to_delete = os.path.join(home_local_bin, 'resetswift')
+    delete_file_if_exists(file_to_delete)
 
     #============================    START   ======================
-    reset_script = ''
+    mount_base_dir = swift_mount_base_dir(opts)
     """
-
     swift-init all stop
-# Remove the following line if you did not set up rsyslog for individual logging:
-sudo umount /mnt/sdb*
-# If you are using a loopback device set SAIO_BLOCK_DEVICE to "/srv/swift-disk"
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk1}
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk2}
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk3}
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk4}
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk5}
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk6}
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk7}
-sudo mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk8}
-sudo mount /mnt/sdb*
-sudo mkdir -p /mnt/sdb1/swift1_1 /mnt/sdb1/swift1_2 /mnt/sdb1/swift1_3 /mnt/sdb1/swift1_4
-sudo mkdir -p /mnt/sdb5/swift1_5 /mnt/sdb6/swift1_6 /mnt/sdb7/swift1_7 /mnt/sdb8/swift1_8
+    # Remove the following line if you did not set up rsyslog for individual logging:
+    umount /mnt/sdb*
+    # If you are using a loopback device set SAIO_BLOCK_DEVICE to "/srv/swift-disk"
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk1}
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk2}
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk3}
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk4}
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk5}
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk6}
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk7}
+    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk8}
+    mount /mnt/sdb*
+    mkdir -p /mnt/sdb1/swift1_1 /mnt/sdb1/swift1_2 /mnt/sdb1/swift1_3 /mnt/sdb1/swift1_4
+    mkdir -p /mnt/sdb5/swift1_5 /mnt/sdb6/swift1_6 /mnt/sdb7/swift1_7 /mnt/sdb8/swift1_8
 
-sudo chown -R swift1:swift /mnt/sdb*
-mkdir -p /srv/swift1_1/node/sdb1 /srv/swift1_5/node/sdb5 \
-         /srv/swift1_2/node/sdb2 /srv/swift1_6/node/sdb6 \
-         /srv/swift1_3/node/sdb3 /srv/swift1_7/node/sdb7 \
-         /srv/swift1_4/node/sdb4 /srv/swift1_8/node/sdb8
-sudo rm -f /var/log/debug /var/log/messages /var/log/rsyncd.log /var/log/syslog
-find /var/cache/swift1* -type f -name *.recon -exec rm -f {} \;
-if [ "`type -t systemctl`" == "file" ]; then
-    sudo systemctl restart rsyslog
-    sudo systemctl restart memcached
-else
-    sudo service rsyslog restart
-    sudo /etc/init.d/memcached restart swift1
-fi
-EOF
-"""
-#=========================    STOP  =======================
+    chown -R swift1:swift /mnt/sdb*
+    mkdir -p /srv/swift1_1/node/sdb1 /srv/swift1_5/node/sdb5 \
+             /srv/swift1_2/node/sdb2 /srv/swift1_6/node/sdb6 \
+             /srv/swift1_3/node/sdb3 /srv/swift1_7/node/sdb7 \
+             /srv/swift1_4/node/sdb4 /srv/swift1_8/node/sdb8
+    rm -f /var/log/debug /var/log/messages /var/log/rsyncd.log /var/log/syslog
+    find /var/cache/swift1* -type f -name *.recon -exec rm -f {} \;
+    if [ "`type -t systemctl`" == "file" ]; then
+        systemctl restart rsyslog
+        systemctl restart memcached
+    else
+        service rsyslog restart
+        /etc/init.d/memcached restart swift1
+    fi
+    EOF
+    """
+    #=========================    STOP  =======================
 
+    #chmod +x ${SWIFT1_USER_LOCAL_BIN}/*
 
-    #sudo chmod +x ${SWIFT1_USER_LOCAL_BIN}/*
+    #**********************************************************************************************
+    #MODIFICATIONS TO THE SECOND REPOSITORY
+    # Changing the ports to 60** to 67** series
+    # and modifying the paths to suit swift2
+    #
+    #TODO: refine sed scripts to work efficiently and avoid the rework of replacing the wrong updates
+    #**********************************************************************************************
+    #cd ${SWIFT1_REPO_DIR}; su - swift1;
 
-
-#**********************************************************************************************
-#MODIFICATIONS TO THE SECOND REPOSITORY
-# Changing the ports to 60** to 67** series
-# and modifying the paths to suit swift2
-#
-#TODO: refine sed scripts to work efficiently and avoid the rework of replacing the wrong updates
-#**********************************************************************************************
-
-"""
-    cd ${SWIFT1_REPO_DIR}; su - swift1;
-    sudo find . -type f -exec sed -i 's/\/etc\/swift/\/etc\/swift1/g' {} \;
-    sudo find . -type f -exec sed -i 's/\/var\/run\/swift/\/var\/run\/swift1/g' {} \;
-    sudo find . -type f -exec sed -i 's/\/var\/cache\/swift/\/var\/cache\/swift1/g' {} \;
-    sudo find . -type f -exec sed -i 's/\/tmp\/log\/swift/\/tmp\/swift1_log\/swift/g' {} \;
-    sudo find . -type f -exec sed -i 's/swift11/swift1/g' {} \;
-"""
-
-"""
-    replacements = []
+    replacements = {}
+    replacements['/etc/swift'] = '/etc/%s' % user
+    replacements['/var/run/swift'] = '/var/run/%s' % user
+    replacements['/var/cache/swift'] = '/var/cache/%s' % user
+    replacements['/tmp/log/swift'] = '/tmp/%s_log/swift' % user
+    replacements['/tmp'] = '/tmp/%s_tmp' % user
     replacements['8080'] = '8008'
     replacements['6010'] = '6710'
-    replacements['6020'] = ''
-    replacements['6030'] = ''
-    replacements['6040'] = ''
-    replacements['6011'] = ''
-    replacements['6021'] = ''
-    replacements['6031'] = ''
-    replacements['6041'] = ''
-    replacements['6012'] = ''
-    replacements['6022'] = ''
-    replacements['6032'] = ''
-    replacements['6042'] = ''
-    replacements['swift22'] = 'swift2'
-"""
-
-"""
-sudo find . -type f -exec sed -i 's/\/etc\/swift/\/etc\/swift2/g' {} \;
-sudo find . -type f -exec sed -i 's/\/var\/run\/swift/\/var\/run\/swift2/g' {} \;
-sudo find . -type f -exec sed -i 's/\/var\/cache\/swift/\/var\/cache\/swift2/g' {} \;
-sudo find . -type f -exec sed -i 's/\/tmp/\/tmp\/swift2_tmp/g' {} \;
-
-sudo find . -type f -exec sed -i 's/8080/8008/g' {} \;
-sudo find . -type f -exec sed -i 's/6010/6710/g' {} \;
-sudo find . -type f -exec sed -i 's/6020/6720/g' {} \;
-sudo find . -type f -exec sed -i 's/6030/6730/g' {} \;
-sudo find . -type f -exec sed -i 's/6040/6740/g' {} \;
-sudo find . -type f -exec sed -i 's/6011/6711/g' {} \;
-sudo find . -type f -exec sed -i 's/6021/6721/g' {} \;
-sudo find . -type f -exec sed -i 's/6031/6731/g' {} \;
-sudo find . -type f -exec sed -i 's/6041/6741/g' {} \;
-sudo find . -type f -exec sed -i 's/6012/6712/g' {} \;
-sudo find . -type f -exec sed -i 's/6022/6722/g' {} \;
-sudo find . -type f -exec sed -i 's/6032/6732/g' {} \;
-sudo find . -type f -exec sed -i 's/6042/6742/g' {} \;
-sudo find . -type f -exec sed -i 's/swift22/swift2/g' {} \;
-sudo find . -type f -exec sed -i 's/swift1_cache/swift2_cache/g' {} \;
-"""
+    replacements['6020'] = '6720'
+    replacements['6030'] = '6730'
+    replacements['6040'] = '6740'
+    replacements['6011'] = '6711'
+    replacements['6021'] = '6721'
+    replacements['6031'] = '6731'
+    replacements['6041'] = '6741'
+    replacements['6012'] = '6712'
+    replacements['6022'] = '6722'
+    replacements['6032'] = '6732'
+    replacements['6042'] = '6742'
+    #replace_all
 
 
 def get_swift_users(opts):
@@ -454,6 +452,7 @@ def main():
     opts[SWIFT_HOME_BASE_DIR] = '/home'
     opts[SWIFT_REMOTE_REPO] = 'https://github.com/openstack/swift'
     opts[SWIFT_MOUNT_OPTIONS] = 'loop,noatime,nodiratime,nobarrier,logbufs=8 0 0'
+    opts[SWIFT_HOME_LOCAL_BIN] = '.local/bin'
 
     for swift_user in get_swift_users(opts):
         opts[SWIFT_USER_NAME] = swift_user
