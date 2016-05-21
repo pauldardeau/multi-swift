@@ -25,6 +25,16 @@ SWIFT_REMOTE_REPO = 'swift_remote_repo'
 SWIFT_MOUNT_OPTIONS = 'swift_mount_options'
 SWIFT_MKFS_OPTIONS = 'swift_mkfs_options'
 SWIFT_HOME_LOCAL_BIN = 'swift_home_local_bin'
+SWIFT_PORT_ADJUST = 'swift_port_adjust'
+SWIFT_PROXY_PORT_ADJUST = 'swift_proxy_port_adjust'
+
+
+def swift_port_adjust(opts):
+    return int(opts[SWIFT_PORT_ADJUST])
+
+
+def swift_proxy_port_adjust(opts):
+    return int(opts[SWIFT_PROXY_PORT_ADJUST])
 
 
 def swift_disk_count(opts):
@@ -411,26 +421,30 @@ def swift_setup_configs(opts):
     #**********************************************************************************************
     #cd ${SWIFT1_REPO_DIR}; su - swift1;
 
+    port_adjust = swift_port_adjust(opts)
+    proxy_port_adjust = swift_proxy_port_adjust(opts)
+
     replacements = {}
     replacements['/etc/swift'] = '/etc/%s' % user
     replacements['/var/run/swift'] = '/var/run/%s' % user
     replacements['/var/cache/swift'] = '/var/cache/%s' % user
     replacements['/tmp/log/swift'] = '/tmp/%s_log/swift' % user
     replacements['/tmp'] = '/tmp/%s_tmp' % user
-    replacements['8080'] = '8008'
-    replacements['6010'] = '6710'
-    replacements['6020'] = '6720'
-    replacements['6030'] = '6730'
-    replacements['6040'] = '6740'
-    replacements['6011'] = '6711'
-    replacements['6021'] = '6721'
-    replacements['6031'] = '6731'
-    replacements['6041'] = '6741'
-    replacements['6012'] = '6712'
-    replacements['6022'] = '6722'
-    replacements['6032'] = '6732'
-    replacements['6042'] = '6742'
+    replacements['8080'] = str(8080+proxy_port_adjust) 
+    replacements['6010'] = str(6010+port_adjust)
+    replacements['6020'] = str(6020+port_adjust)
+    replacements['6030'] = str(6030+port_adjust)
+    replacements['6040'] = str(6040+port_adjust)
+    replacements['6011'] = str(6011+port_adjust)
+    replacements['6021'] = str(6021+port_adjust)
+    replacements['6031'] = str(6031+port_adjust)
+    replacements['6041'] = str(6041+port_adjust)
+    replacements['6012'] = str(6012+port_adjust)
+    replacements['6022'] = str(6022+port_adjust)
+    replacements['6032'] = str(6032+port_adjust)
+    replacements['6042'] = str(6042+port_adjust)
     #replace_all
+    print('replacements: %s' % repr(replacements))
 
 
 def get_swift_users(opts):
@@ -461,9 +475,16 @@ def main():
     opts[SWIFT_MOUNT_OPTIONS] = 'loop,noatime,nodiratime,nobarrier,logbufs=8 0 0'
     opts[SWIFT_HOME_LOCAL_BIN] = '.local/bin'
 
+    port_adjust = 100
+    proxy_port_adjust = 10
+
     for swift_user in get_swift_users(opts):
         opts[SWIFT_USER_NAME] = swift_user
+        opts[SWIFT_PORT_ADJUST] = port_adjust
+        opts[SWIFT_PROXY_PORT_ADJUST] = proxy_port_adjust
         swift_setup_environment(opts)
+        port_adjust += 100
+        proxy_port_adjust += 10
 
 
 if __name__=='__main__':
