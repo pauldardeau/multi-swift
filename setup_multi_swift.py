@@ -21,10 +21,29 @@ SWIFT_RUN_BASE_DIR = 'swift_run_base_dir'
 SWIFT_CACHE_BASE_DIR = 'swift_cache_base_dir'
 SWIFT_REMOTE_REPO = 'swift_remote_repo'
 SWIFT_MOUNT_OPTIONS = 'swift_mount_options'
+SWIFT_MKFS_OPTIONS = 'swift_mkfs_options'
 
 
 def swift_disk_count(opts):
     return int(opts[SWIFT_DISK_COUNT])
+
+
+def swift_disk_size_gb(opts):
+    return opts[SWIFT_DISK_SIZE_GB]
+
+
+def swift_mkfs_options(opts):
+    return opts[SWIFT_MKFS_OPTIONS]
+
+
+def create_file_system(fs_path):
+    #TODO: implement create_file_system
+    print('create_file_system: %s' % fs_path)
+
+
+def create_file_with_gb_size(file_path, gb_size):
+    #TODO: implement create_file_with_gb_size
+    print('create_file_with_gb_size: %s %s' % (file_path, gb_size))
 
 
 def copy_file(src_file, dest):
@@ -185,8 +204,10 @@ def swift_create_directories(opts):
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
         disk_path = '%s/%s-disk%s' % (disk_base_dir, user_name, disk_num)
+        create_file_with_gb_size(disk_path, swift_disk_size_gb(opts))
         #truncate -s "${SWIFT_DISK_SIZE_GB}GB" "${SWIFT1_DISK}"
         #mkfs_command(opts) -f "${SWIFT1_DISK}"
+        create_file_system(disk_path)
 
     #==================   START  ====================
     fstab_append = """
@@ -422,6 +443,7 @@ def main():
     opts = {}
     opts[SWIFT_GROUP_NAME] = 'swift'
     opts[SWIFT_FS_TYPE] = 'xfs'
+    opts[SWIFT_MKFS_OPTIONS] = '-f'
     opts[SWIFT_DISK_SIZE_GB] = '1'
     opts[SWIFT_DISK_BASE_DIR] = '/srv'
     opts[SWIFT_DISK_COUNT] = '8'
