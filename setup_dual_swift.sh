@@ -3,7 +3,7 @@
 #*************************************************************************************************
 #   THIS IS A DRAFT OF THE SETUP SCRIPT FOR DUAL SAIO INSTALLATIONS SHARING THE SAME HARDWARE
 # This script may not be fully functional yet. I will be updating it regularly. This script requires
-# you to run ass users script first.
+# you to run addusers.sh script first.
 #*************************************************************************************************
 SWIFT1_USER="swift1"
 SWIFT2_USER="swift2"
@@ -161,7 +161,8 @@ sudo find . -type f -exec sed -i 's/\/srv\/4\/node/\/srv\/swift1_4\/node/g' {} \
 sudo find . -type f -exec sed -i 's/swift12/swift1/g' {} \;
 sudo find . -type f -exec sed -i 's/swift13/swift1/g' {} \;
 sudo find . -type f -exec sed -i 's/swift14/swift1/g' {} \;
-	
+
+#TODO: should the following be SWIFT2_CONFIG_DIR?
 cd ${SWIFT1_CONFIG_DIR};
 sudo find . -type f -exec sed -i 's/\/srv\/1\/node/\/srv\/swift2_1\/node/g' {} \;
 sudo find . -type f -exec sed -i 's/\/srv\/2\/node/\/srv\/swift2_2\/node/g' {} \;
