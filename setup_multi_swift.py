@@ -6,6 +6,7 @@ import os
 import os.path
 import pwd
 import shutil
+import sys
 
 
 RUN_MODE_EXEC = 'exec'
@@ -167,6 +168,14 @@ def append_to_file(opts, text_to_append, file_path):
     elif swift_is_exec_mode(opts):
         with open(file_path, "a") as f:
             f.write(text_to_append)
+
+
+def user_exists(opts, user_name):
+    try:
+        user_entry = pwd.getpwnam(user_name)
+        return True
+    except KeyError:
+        return False
 
 
 def change_owner(opts, file_path, user_name, group_name, recurse=False):
@@ -603,10 +612,23 @@ def main():
     opts[SWIFT_MOUNT_OPTIONS] = 'loop,noatime,nodiratime,nobarrier,logbufs=8 0 0'
     opts[SWIFT_HOME_LOCAL_BIN] = '.local/bin'
     opts[SWIFT_REPO_NAME] = 'swift'
-    opts[SWIFT_RUN_MODE] = RUN_MODE_LOGIC
+    opts[SWIFT_RUN_MODE] = RUN_MODE_PREVIEW
 
     port_adjust = 100
     proxy_port_adjust = 10
+
+    swift_users = get_swift_users(opts)
+    non_existent_users = []
+
+    for swift_user in swift_users:
+        if not user_exists(opts, swift_user):
+            non_existent_users.append(swift_user)
+
+    if len(non_existent_users) > 0:
+        print('error: the following users are not valid os users')
+        for invalid_user in non_existent_users:
+            print(invalid_user)
+        sys.exit(1)
 
     for swift_user in get_swift_users(opts):
         opts[SWIFT_USER_NAME] = swift_user
