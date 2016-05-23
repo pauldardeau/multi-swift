@@ -7,6 +7,11 @@ import os.path
 import pwd
 import shutil
 
+
+RUN_MODE_EXEC = 'exec'
+RUN_MODE_LOGIC = 'logic'
+RUN_MODE_PREVIEW = 'preview'
+
 GB_BYTES = 1024 * 1024 * 1024
 SWIFT_USER_NAME = 'swift_user'
 SWIFT_GROUP_NAME = 'swift_group'
@@ -27,6 +32,28 @@ SWIFT_MKFS_OPTIONS = 'swift_mkfs_options'
 SWIFT_HOME_LOCAL_BIN = 'swift_home_local_bin'
 SWIFT_PORT_ADJUST = 'swift_port_adjust'
 SWIFT_PROXY_PORT_ADJUST = 'swift_proxy_port_adjust'
+SWIFT_REPO_NAME = 'swift_repo_name'
+SWIFT_RUN_MODE = 'swift_run_mode'
+
+
+def swift_run_mode(opts):
+    return opts[SWIFT_RUN_MODE]
+
+
+def swift_is_exec_mode(opts):
+    return swift_run_mode(opts) == RUN_MODE_EXEC
+
+
+def swift_is_logic_mode(opts):
+    return swift_run_mode(opts) == RUN_MODE_LOGIC
+
+
+def swift_is_preview_mode(opts):
+    return swift_run_mode(opts) == RUN_MODE_PREVIEW
+
+
+def swift_repo_name(opts):
+    return opts[SWIFT_REPO_NAME]
 
 
 def swift_port_adjust(opts):
@@ -49,56 +76,91 @@ def swift_mkfs_options(opts):
     return opts[SWIFT_MKFS_OPTIONS]
 
 
-def create_file_system(fs_path):
-    #TODO: implement create_file_system
-    print('create_file_system: %s' % fs_path)
+def create_file_system(opts, fs_path):
+    if swift_is_logic_mode(opts): 
+        print('create_file_system: %s' % fs_path)
+    else:
+        #TODO: implement create_file_system
+        pass
 
 
-def create_file_with_gb_size(file_path, gb_size):
+def create_file_with_gb_size(opts, file_path, gb_size):
     gb_size_in_bytes = GB_BYTES * gb_size
-    print('create_file_with_gb_size: %s %s (%s)' % (file_path, gb_size, str(gb_size_in_bytes)))
-    #with open(file_path, 'w') as f:
-    #    f.truncate(gb_size_in_bytes)
+    if swift_is_logic_mode(opts):
+        print('create_file_with_gb_size: %s %s (%s)' % (file_path,
+                                                        gb_size,
+                                                        str(gb_size_in_bytes)))
+    else:
+        if swift_is_exec_mode(opts):
+            with open(file_path, 'w') as f:
+                f.truncate(gb_size_in_bytes)
+        elif swift_is_preview_mode(opts):
+            #TODO: implement preview mode for create_file_with_gb_size
+            pass
 
 
-def file_exists(file_path):
-    print('checking_file_exists: %s' % file_path)
+def file_exists(opts, file_path):
+    if swift_is_logic_mode(opts):
+    	print('checking_file_exists: %s' % file_path)
     return os.path.isfile(file_path)
 
 
-def delete_file(file_to_delete):
-    print('delete_file: %s' % file_to_delete)
-    #os.remove(file_to_delete)
+def delete_file(opts, file_to_delete):
+    if swift_is_logic_mode(opts):
+        print('delete_file: %s' % file_to_delete)
+    elif swift_is_preview_mode(opts):
+        print("os.remove('%s')" % file_to_delete)
+    elif swift_is_exec_mode(opts):
+    	os.remove(file_to_delete)
 
 
-def delete_file_if_exists(file_to_delete):
-    print('delete_file_if_exists: %s' % file_to_delete)
-    if file_exists(file_to_delete):
-        delete_file(file_to_delete)
+def delete_file_if_exists(opts, file_to_delete):
+    if swift_is_logic_mode(opts):
+        print('delete_file_if_exists: %s' % file_to_delete)
+    if file_exists(opts, file_to_delete):
+        delete_file(opts, file_to_delete)
 
 
-def copy_file(src_file, dest):
-    print('copy_file: %s %s' % (src_file, dest))
-    #shutil.copy(src_file, dest)
+def copy_file(opts, src_file, dest):
+    if swift_is_logic_mode(opts):
+        print('copy_file: %s %s' % (src_file, dest))
+    elif swift_is_preview_mode(opts):
+        print("shutil.copy('%s', '%s')" % (src_file, dest))
+    elif swift_is_exec_mode(opts):
+        shutil.copy(src_file, dest)
 
 
-def copy_all(src_dir, dest_dir, recurse=False):
-    #TODO: implement copy_all
-    print('copy_all: %s %s' % (src_dir, dest_dir))
+def copy_all(opts, src_dir, dest_dir, recurse=False):
+    if swift_is_logic_mode(opts):
+        print('copy_all: %s %s' % (src_dir, dest_dir))
+    #TODO: implement preview mode of copy_all
+    #TODO: implement exec mode of copy_all
 
 
-def append_to_file(text_to_append, file_path):
-    print('append_to_file: %s' % file_path)
-    print(text_to_append)
-    #with open(file_path, "a") as f:
-    #    f.write(text_to_append)
+def append_to_file(opts, text_to_append, file_path):
+    if swift_is_logic_mode(opts):
+        print('append_to_file: %s' % file_path)
+        print('%s...' % text_to_append[0:50])
+    elif swift_is_preview_mode(opts):
+        #TODO: implement preview mode of append_to_file
+        pass
+    elif swift_is_exec_mode(opts):
+        with open(file_path, "a") as f:
+            f.write(text_to_append)
 
 
-def change_owner(file_path, user_name, group_name, recurse=False):
-    print('change_owner: %s (%s,%s)' % (file_path, user_name, group_name))
-    #uid = pwd.getpwnam(user_name).pw_uid
-    #gid = pwd.getpwnam(user_name).pw_gid
-    #os.chown(file_path, uid, gid)
+def change_owner(opts, file_path, user_name, group_name, recurse=False):
+    if swift_is_logic_mode(opts):
+        print('change_owner: %s (%s,%s)' % (file_path,
+                                            user_name,
+                                            group_name))
+    else:
+        uid = pwd.getpwnam(user_name).pw_uid
+        gid = pwd.getpwnam(user_name).pw_gid
+        if swift_is_preview_mode(opts):
+            print("os.chown('%s', %s, %s)" % (file_path, str(uid), str(gid)))
+        elif swift_is_exec_mode(opts):
+            os.chown(file_path, uid, gid)
 
 
 def swift_disk_base_dir(opts):
@@ -114,35 +176,49 @@ def swift_remote_repo(opts):
 
 
 def swift_local_repo(opts):
-    return os.path.join(swift_home_dir(opts), 'swift')
+    return os.path.join(swift_home_dir(opts), swift_repo_name(opts))
 
 
-def dir_exists(dir_path):
+def dir_exists(opts, dir_path):
+    if swift_is_logic_mode(opts):
+        print('checking_dir_exists: %s' % dir_path)
     return os.path.isdir(dir_path)
 
 
-def create_dir(dir_path):
-    print('create_dir: %s' % dir_path)
-    #os.makedirs(dir_path)
+def create_dir(opts, dir_path):
+    if swift_is_logic_mode(opts):
+        print('create_dir: %s' % dir_path)
+    elif swift_is_preview_mode(opts):
+        print("os.makedirs('%s')" % dir_path)
+    elif swift_is_exec_mode(opts):
+        os.makedirs(dir_path)
 
 
-def dir_replace_all(dir_path, replacements):
+def dir_replace_all(opts, dir_path, replacements):
     """Replace all occurrences for all files in specified directory"""
     #TODO: dir_replace_all: enumerate all files in dir_path
     #TODO: dir_replace_all: if file is a text file (if this can be easily determined)
     #TODO: dir_replace_all: read file contents
     #TODO: dir_replace_all: call replace_all
     #TODO: dir_replace_all: if file contents are changed, re-write file
-    print('dir_replace_all: %s %s' % (dir_path, repr(replacements)))
+    if swift_is_logic_mode(opts):
+        print('dir_replace_all: %s %s' % (dir_path, repr(replacements)))
+    #TODO: implement preview mode of dir_replace_all
+    #TODO: implement exec mode of dir_replace_all
 
 
-def dir_replace(dir_path, file_spec, replacements):
-    print('dir_replace: %s %s %s' % (dir_path, file_spec, repr(replacements)))
+def dir_replace(opts, dir_path, file_spec, replacements):
+    if swift_is_logic_mode(opts):
+        print('dir_replace: %s %s %s' % (dir_path, file_spec, repr(replacements)))
+    #TODO: implement preview mode of dir_replace
+    #TODO: implement exec mode of dir_replace
 
 
-def replace_all(s, replacements):
-    #TODO: implement replace_all
-    print('replace_all: %s %s' % (s, repr(replacements)))
+def replace_all(opts, s, replacements):
+    if swift_is_logic_mode(opts):
+        print('replace_all: %s %s' % (s, repr(replacements)))
+    #TODO: implement preview mode of replace_all
+    #TODO: implement exec mode of replace_all
 
 
 def swift_fs_type(opts):
@@ -232,8 +308,7 @@ def setup_fstab_entries(opts):
         mount_point = '%s/sdb1' % (mount_base_dir)
         fs_entry = '%s %s %s %s\n' % (device_spec, mount_point, fs_type, mount_options)
         fstab_entries += fs_entry
-
-    append_to_file(fstab_entries, '/etc/fstab')
+    append_to_file(opts, fstab_entries, '/etc/fstab')
 
 
 def swift_create_directories(opts):
@@ -244,26 +319,26 @@ def swift_create_directories(opts):
     group_name = swift_group(opts)
 
     # set up config dir
-    create_dir(config_dir)
-    change_owner(config_dir, user_name, group_name)
+    create_dir(opts, config_dir)
+    change_owner(opts, config_dir, user_name, group_name)
 
     # set up run dir
-    create_dir(run_dir)
-    change_owner(run_dir, user_name, group_name)
+    create_dir(opts, run_dir)
+    change_owner(opts, run_dir, user_name, group_name)
 
-    create_dir(disk_base_dir)
-    create_dir(swift_mount_base_dir(opts))
+    create_dir(opts, disk_base_dir)
+    create_dir(opts, swift_mount_base_dir(opts))
 
     # good idea to have backup of fstab before we modify it
-    copy_file('/etc/fstab', '/etc/fstab_insert_%s' % user_name)
+    copy_file(opts, '/etc/fstab', '/etc/fstab_insert_%s' % user_name)
 
     gb_size_as_int = int(swift_disk_size_gb(opts))
 
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
         disk_path = '%s/%s-disk%s' % (disk_base_dir, user_name, disk_num)
-        create_file_with_gb_size(disk_path, gb_size_as_int)
-        create_file_system(disk_path)
+        create_file_with_gb_size(opts, disk_path, gb_size_as_int)
+        create_file_system(opts, disk_path)
 
     setup_fstab_entries(opts)
 
@@ -274,24 +349,24 @@ def swift_create_directories(opts):
         SWIFT1_DISK_DIR = '%s/%s_%s' % (disk_base_dir, user_name, disk_num)
         disk_dir = '%s/%s_%s' % (disk_base_dir, user_name, disk_num)
         mount_dir = '%s/sdb%s/%s_%s' % (mount_base_dir, disk_num, user_name, disk_num)
-        create_dir(mount_dir) 
-        change_owner(mount_dir, user_name, group_name)
+        create_dir(opts, mount_dir) 
+        change_owner(opts, mount_dir, user_name, group_name)
         #ln -s ${SWIFT1_MOUNT_DIR} ${SWIFT1_DISK_DIR}
         #chown -h ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
 
     cache_base_dir = swift_cache_base_dir(opts)
-    create_dir(cache_base_dir)
+    create_dir(opts, cache_base_dir)
 
     #mount -a
 
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
         dir_path = '%s/%s_%s/node/sdb%s' % (disk_base_dir, user_name, disk_num, disk_num)
-        create_dir(dir_path)
+        create_dir(opts, dir_path)
 
     #PJD: SWIFT1_DISK_DIR doesn't seem correct here
     #chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
-    change_owner(SWIFT1_DISK_DIR, user_name, group_name, True)
+    change_owner(opts, SWIFT1_DISK_DIR, user_name, group_name, True)
 
 #******************************************************************************
 
@@ -303,13 +378,20 @@ def swift_create_directories(opts):
 
 #******************************************************************************
 
+def exec_as_user(opts, cmd, exec_user):
+    if swift_is_logic_mode(opts):
+        print('exec (%s): %s' % (exec_user, cmd))
+    #TODO: implement preview mode of exec_as_user
+    #TODO: implement exec mode of exec_as_user
+
+
 def setup_local_swift_repo(opts):
     user_home_dir = swift_home_dir(opts)
     if dir_exists(user_home_dir):
         cmd = 'cd %s && git pull' % user_home_dir
     else:
         cmd = 'git clone %s' % swift_remote_repo(opts)
-    exec_as_user(cmd, swift_user(opts))
+    exec_as_user(opts, cmd, swift_user(opts))
 
 
 def setup_bashrc(opts):
@@ -318,7 +400,7 @@ def setup_bashrc(opts):
     env_var_stmts += 'export SWIFT_TEST_CONFIG_FILE=%s' % swift_test_config_file(opts) 
     env_var_stmts += 'export PATH=${PATH}:$HOME/.local/bin'
     env_var_stmts += 'export PYTHON_EGG_CACHE=%s' % swift_egg_cache_dir(opts)
-    append_to_file(env_var_stmts, login_config_file(opts))
+    append_to_file(opts, env_var_stmts, login_config_file(opts))
     disk_base_dir = swift_disk_base_dir(opts)
     #echo "export SAIO_BLOCK_DEVICE=/srv/swift-disk1" >> ${SWIFT1_LOGIN_CONFIG}
     #echo "export SWIFT_TEST_CONFIG_FILE=/etc/swift1/test.conf" >> ${SWIFT1_LOGIN_CONFIG}
@@ -328,7 +410,8 @@ def setup_bashrc(opts):
 
 def swift_setup_configs(opts):
     repo_dir = swift_local_repo(opts)
-    copy_file(os.path.join(repo_dir,'test/sample.conf'),
+    copy_file(opts,
+              os.path.join(repo_dir,'test/sample.conf'),
               swift_test_config_file(opts))
 
     user = swift_user(opts)
@@ -337,22 +420,22 @@ def swift_setup_configs(opts):
     config_dir = swift_config_dir(opts)
 
     source_dir = '%s/doc/saio/swift' % repo_dir
-    copy_all(source_dir, config_dir, True)
+    copy_all(opts, source_dir, config_dir, True)
 
-    change_owner(config_dir, user, group, True)
+    change_owner(opts, config_dir, user, group, True)
 
     disk_base_dir = swift_disk_base_dir(opts)
 
     search_replace = {}
     search_replace['<your-user-name>'] = user
-    dir_replace(config_dir, '*.conf', search_replace)
+    dir_replace(opts, config_dir, '*.conf', search_replace)
 
     search_replace = {}
     search_replace['/srv/1/node'] = '%s/%s_1/node' % (disk_base_dir, user)
     search_replace['/srv/2/node'] = '%s/%s_2/node' % (disk_base_dir, user)
     search_replace['/srv/3/node'] = '%s/%s_3/node' % (disk_base_dir, user)
     search_replace['/srv/4/node'] = '%s/%s_4/node' % (disk_base_dir, user)
-    dir_replace_all(config_dir, search_replace)
+    dir_replace_all(opts, config_dir, search_replace)
 
     home_local_bin = swift_home_local_bin_dir(opts)
 
@@ -371,7 +454,7 @@ def swift_setup_configs(opts):
     rm resetswift;
     """
     file_to_delete = os.path.join(home_local_bin, 'resetswift')
-    delete_file_if_exists(file_to_delete)
+    delete_file_if_exists(opts, file_to_delete)
 
     #============================    START   ======================
     mount_base_dir = swift_mount_base_dir(opts)
@@ -474,6 +557,8 @@ def main():
     opts[SWIFT_REMOTE_REPO] = 'https://github.com/openstack/swift'
     opts[SWIFT_MOUNT_OPTIONS] = 'loop,noatime,nodiratime,nobarrier,logbufs=8 0 0'
     opts[SWIFT_HOME_LOCAL_BIN] = '.local/bin'
+    opts[SWIFT_REPO_NAME] = 'swift'
+    opts[SWIFT_RUN_MODE] = RUN_MODE_LOGIC
 
     port_adjust = 100
     proxy_port_adjust = 10
