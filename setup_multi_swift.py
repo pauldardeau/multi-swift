@@ -80,8 +80,13 @@ def create_file_system(opts, fs_path):
     if swift_is_logic_mode(opts): 
         print('create_file_system: %s' % fs_path)
     else:
-        #TODO: implement create_file_system
-        pass
+        cmd = '%s %s %s' % (mkfs_command(opts),
+                            swift_mkfs_options(opts),
+                            fs_path)
+        if swift_is_preview_mode(opts):
+            print(cmd)
+        else:
+            os.system(cmd)
 
 
 def create_file_with_gb_size(opts, file_path, gb_size):
@@ -159,6 +164,17 @@ def change_owner(opts, file_path, user_name, group_name, recurse=False):
             print("os.chown('%s', %s, %s)" % (file_path, str(uid), str(gid)))
         elif swift_is_exec_mode(opts):
             os.chown(file_path, uid, gid)
+
+
+def mount_all_filesystems(opts):
+    if swift_is_logic_mode(opts):
+        print('mount all filesystems')
+    else:
+        cmd = 'mount -a'
+        if swift_is_preview_mode(opts):
+            print(cmd)
+        elif swift_is_exec_mode(opts):
+            os.system(cmd)
 
 
 def swift_disk_base_dir(opts):
@@ -364,7 +380,7 @@ def swift_create_directories(opts):
     cache_base_dir = swift_cache_base_dir(opts)
     create_dir(opts, cache_base_dir)
 
-    #mount -a
+    mount_all_filesystems(opts)
 
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
@@ -388,8 +404,12 @@ def swift_create_directories(opts):
 def exec_as_user(opts, cmd, exec_user):
     if swift_is_logic_mode(opts):
         print('exec (%s): %s' % (exec_user, cmd))
-    #TODO: implement preview mode of exec_as_user
-    #TODO: implement exec mode of exec_as_user
+    else:
+        cmd = 'su - %s -c %s' % (exec_user, cmd)
+        if swift_is_preview_mode(opts):
+            print(cmd)
+        elif swift_is_exec_mode(opts):
+            os.system(cmd)
 
 
 def setup_local_swift_repo(opts):
@@ -543,7 +563,8 @@ def get_swift_users(opts):
 
 
 def swift_setup_environment(opts):
-    print('setup swift user %s' % swift_user(opts))
+    if swift_is_logic_mode(opts):
+        print('setup swift user %s' % swift_user(opts))
     swift_create_directories(opts)
     swift_setup_configs(opts)
 
