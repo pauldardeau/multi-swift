@@ -95,8 +95,7 @@ def create_file_with_gb_size(opts, file_path, gb_size):
             with open(file_path, 'w') as f:
                 f.truncate(gb_size_in_bytes)
         elif swift_is_preview_mode(opts):
-            #TODO: implement preview mode for create_file_with_gb_size
-            pass
+            print("open('%s','w'); truncate(%d)" % (file_path, gb_size_in_bytes))
 
 
 def file_exists(opts, file_path):
@@ -140,10 +139,9 @@ def copy_all(opts, src_dir, dest_dir, recurse=False):
 def append_to_file(opts, text_to_append, file_path):
     if swift_is_logic_mode(opts):
         print('append_to_file: %s' % file_path)
-        print('%s...' % text_to_append[0:50])
+        print('%s...' % text_to_append[0:40])
     elif swift_is_preview_mode(opts):
-        #TODO: implement preview mode of append_to_file
-        pass
+        print("open('%s', 'a'); print('%s...')" % (file_path, text_to_append[0:40]))
     elif swift_is_exec_mode(opts):
         with open(file_path, "a") as f:
             f.write(text_to_append)
@@ -192,6 +190,15 @@ def create_dir(opts, dir_path):
         print("os.makedirs('%s')" % dir_path)
     elif swift_is_exec_mode(opts):
         os.makedirs(dir_path)
+
+
+def create_link(opts, src, dest):
+    if swift_is_logic_mode(opts):
+        print('create_link %s <-- %s' % (src, dest))
+    elif swift_is_preview_mode(opts):
+        print("os.symlink('%s', '%s')" % (src, dest))
+    elif swift_is_exec_mode(opts):
+        os.symlink(src, dest)
 
 
 def dir_replace_all(opts, dir_path, replacements):
@@ -351,8 +358,8 @@ def swift_create_directories(opts):
         mount_dir = '%s/sdb%s/%s_%s' % (mount_base_dir, disk_num, user_name, disk_num)
         create_dir(opts, mount_dir) 
         change_owner(opts, mount_dir, user_name, group_name)
-        #ln -s ${SWIFT1_MOUNT_DIR} ${SWIFT1_DISK_DIR}
-        #chown -h ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
+        create_link(opts, mount_dir, disk_dir)
+        change_owner(opts, disk_dir, user_name, group_name)
 
     cache_base_dir = swift_cache_base_dir(opts)
     create_dir(opts, cache_base_dir)
