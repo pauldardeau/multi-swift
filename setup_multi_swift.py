@@ -134,11 +134,28 @@ def copy_file(opts, src_file, dest):
         shutil.copy(src_file, dest)
 
 
+def copy_dir_files(opts, src_dir, dest_dir):
+    names = os.listdir(src_dir)
+    for name in os.listdir(src_dir):
+        srcname = os.path.join(src_dir, name)
+        if not os.path.isdir(srcname):
+            shutil.copy2(srcname, os.path.join(dest_dir, name))
+
+
 def copy_all(opts, src_dir, dest_dir, recurse=False):
     if swift_is_logic_mode(opts):
         print('copy_all: %s %s' % (src_dir, dest_dir))
-    #TODO: implement preview mode of copy_all
-    #TODO: implement exec mode of copy_all
+    else:
+        if swift_is_preview_mode(opts):
+            if recurse:
+                print('cp -R %s/* %s' % (src_dir, dest_dir))
+            else:
+                print('cp %s/* %s' % (src_dir, dest_dir))
+        elif swift_is_exec_mode(opts):
+            if recurse:
+                shutil.copytree(src_dir, dest_dir)
+            else:
+                copy_dir_files(src_dir, dest_dir)
 
 
 def append_to_file(opts, text_to_append, file_path):
