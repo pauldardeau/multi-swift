@@ -255,22 +255,37 @@ def dir_replace_all(opts, dir_path, replacements):
     #TODO: dir_replace_all: if file contents are changed, re-write file
     if swift_is_logic_mode(opts):
         print('dir_replace_all: %s %s' % (dir_path, repr(replacements)))
-    #TODO: implement preview mode of dir_replace_all
-    #TODO: implement exec mode of dir_replace_all
+    elif swift_is_preview_mode(opts):
+        #TODO: implement preview mode of dir_replace_all
+        pass
+    elif swift_is_exec_mode(opts):
+        #TODO: implement exec mode of dir_replace_all
+        pass
 
 
 def dir_replace(opts, dir_path, file_spec, replacements):
     if swift_is_logic_mode(opts):
-        print('dir_replace: %s %s %s' % (dir_path, file_spec, repr(replacements)))
-    #TODO: implement preview mode of dir_replace
-    #TODO: implement exec mode of dir_replace
+        print('dir_replace: %s %s %s' % (dir_path,
+                                         file_spec,
+                                         repr(replacements)))
+    elif swift_is_preview_mode(opts):
+        #TODO: implement preview mode of dir_replace
+        pass
+    elif swift_is_exec_mode(opts):
+        #TODO: implement exec mode of dir_replace
+        pass
 
 
 def replace_all(opts, s, replacements):
     if swift_is_logic_mode(opts):
         print('replace_all: %s %s' % (s, repr(replacements)))
-    #TODO: implement preview mode of replace_all
-    #TODO: implement exec mode of replace_all
+    elif swift_is_preview_mode(opts):
+        #TODO: implement preview mode of replace_all
+        pass
+    elif swift_is_exec_mode(opts):
+        for k, v in replacements.items():
+            s = s.replace(k,v)
+        return s
 
 
 def swift_fs_type(opts):
