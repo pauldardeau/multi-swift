@@ -491,7 +491,7 @@ def setup_bashrc(opts):
         saio_block_device = os.path.join(swift_disk_base_dir(opts),disk_path)
         stmts  = 'export SAIO_BLOCK_DEVICE=%s\n' % saio_block_device
         stmts += 'export SWIFT_TEST_CONFIG_FILE=%s\n' % test_config_file
-        stmts += 'export PATH=${PATH}:$HOME/.local/bin\n'
+        stmts += 'export PATH=${PATH}:$HOME/%s\n' % opts[SWIFT_HOME_LOCAL_BIN]
         stmts += 'export PYTHON_EGG_CACHE=%s\n' % egg_cache_dir
         append_to_file(opts, stmts, login_cfg_file)
 
