@@ -2,6 +2,7 @@
 #
 #
 
+import glob
 import os
 import os.path
 import pwd
@@ -175,7 +176,7 @@ def append_to_file(opts, text_to_append, file_path):
 
 def user_exists(opts, user_name):
     try:
-        user_entry = pwd.getpwnam(user_name)
+        pwd.getpwnam(user_name)
         return True
     except KeyError:
         return False
@@ -246,21 +247,29 @@ def create_link(opts, src, dest):
         os.symlink(src, dest)
 
 
+def file_replace(opts, file_path, replacements):
+    with open(file_path, 'w') as f:
+        file_contents = f.read()
+        new_file_contents = replace_all(opts,
+                                        file_contents,
+                                        replacements)
+        if new_file_contents != file_contents:
+            f.write(new_file_contents)
+
+
 def dir_replace_all(opts, dir_path, replacements):
-    """Replace all occurrences for all files in specified directory"""
-    #TODO: dir_replace_all: enumerate all files in dir_path
-    #TODO: dir_replace_all: if file is a text file (if this can be easily determined)
-    #TODO: dir_replace_all: read file contents
-    #TODO: dir_replace_all: call replace_all
-    #TODO: dir_replace_all: if file contents are changed, re-write file
     if swift_is_logic_mode(opts):
         print('dir_replace_all: %s %s' % (dir_path, repr(replacements)))
     elif swift_is_preview_mode(opts):
         #TODO: implement preview mode of dir_replace_all
         pass
     elif swift_is_exec_mode(opts):
-        #TODO: implement exec mode of dir_replace_all
-        pass
+        dir_listings = os.listdir(dir_path)
+        for dir_listing in dir_listings:
+            path_dir_listing = os.path.join(dir_path, dir_listing)
+            # it would also be nice to verify that file is a text file
+            if os.path.isfile(path_dir_listing): 
+                file_replace(opts, path_dir_listing, replacements)
 
 
 def dir_replace(opts, dir_path, file_spec, replacements):
@@ -272,16 +281,22 @@ def dir_replace(opts, dir_path, file_spec, replacements):
         #TODO: implement preview mode of dir_replace
         pass
     elif swift_is_exec_mode(opts):
-        #TODO: implement exec mode of dir_replace
-        pass
+        if file_spec == '*':
+            dir_replace_all(opts, dir_path, replacements)
+        else:
+            for listing_entry in glob.glob(file_spec):
+                path_listing_entry = os.path.join(dir_path, listing_entry)
+                if os.path.isfile(path_listing_entry):
+                    file_replace(opts, path_listing_entry, replacements)
 
 
 def replace_all(opts, s, replacements):
     if swift_is_logic_mode(opts):
         print('replace_all: %s %s' % (s, repr(replacements)))
+        return s
     elif swift_is_preview_mode(opts):
         #TODO: implement preview mode of replace_all
-        pass
+        return s
     elif swift_is_exec_mode(opts):
         for k, v in replacements.items():
             s = s.replace(k,v)
@@ -296,7 +311,7 @@ def swift_mount_options(opts):
     return opts[SWIFT_MOUNT_OPTIONS]
 
 
-def fstab_entry(opts, disk_number, device):
+def fstab_entry(opts, disk_number):
     device_spec = '%s/%s-disk%d' % (swift_disk_base_dir(opts),
                                     swift_user(opts),
                                     disk_number)
@@ -368,21 +383,8 @@ def swift_gid(opts):
 
 def setup_fstab_entries(opts):
     fstab_entries = ''
-    fs_type = swift_fs_type(opts) 
-    mount_options = swift_mount_options(opts)
-    user = swift_user(opts)
-    mount_base_dir = swift_mount_base_dir(opts)
-    disk_base_dir = swift_disk_base_dir(opts)
-    dev_letter = swift_device_letter(opts)
     for x in range(swift_disk_count(opts)):
-        #TODO: fix device number 1 below
-        device_spec = '%s/%s-disk1' % (disk_base_dir, user)
-        mount_point = '%s/sd%s1' % (mount_base_dir, str(dev_letter))
-        fs_entry = '%s %s %s %s\n' % (device_spec,
-                                      mount_point,
-                                      fs_type,
-                                      mount_options)
-        fstab_entries += fs_entry
+        fstab_entries += fstab_entry(opts, x + 1) 
     append_to_file(opts, fstab_entries, '/etc/fstab')
 
 
@@ -485,18 +487,21 @@ def setup_local_swift_repo(opts):
 
 
 def setup_bashrc(opts):
-    #TODO: implement setup_bashrc
-    env_var_stmts = '' 
-    #env_var_stmts += 'export SAIO_BLOCK_DEVICE=%s' % ??? 
-    env_var_stmts += 'export SWIFT_TEST_CONFIG_FILE=%s' % swift_test_config_file(opts) 
-    env_var_stmts += 'export PATH=${PATH}:$HOME/.local/bin'
-    env_var_stmts += 'export PYTHON_EGG_CACHE=%s' % swift_egg_cache_dir(opts)
-    append_to_file(opts, env_var_stmts, login_config_file(opts))
-    disk_base_dir = swift_disk_base_dir(opts)
-    #echo "export SAIO_BLOCK_DEVICE=/srv/swift-disk1" >> ${SWIFT1_LOGIN_CONFIG}
-    #echo "export SWIFT_TEST_CONFIG_FILE=/etc/swift1/test.conf" >> ${SWIFT1_LOGIN_CONFIG}
-    #echo "export PATH=${PATH}:$HOME/.local/bin" >> ${SWIFT1_LOGIN_CONFIG}
-    #echo "export PYTHON_EGG_CACHE=/home/swift/tmp" >> ${SWIFT1_LOGIN_CONFIG}
+    if swift_is_logic_mode(opts):
+        print('setup bashrc with config options')
+    else:
+        user = swift_user(opts)
+        home_dir = swift_home_dir(opts)
+        login_cfg_file = os.path.join(home_dir, '.bashrc')
+        test_config_file = os.path.join(swift_config_dir(opts), 'test.conf')
+        egg_cache_dir = os.path.join(home_dir, 'tmp')
+        disk_path = 'swift-disk1'  #TODO: fix this
+        saio_block_device = os.path.join(swift_disk_base_dir(opts),disk_path)
+        stmts  = 'export SAIO_BLOCK_DEVICE=%s\n' % saio_block_device
+        stmts += 'export SWIFT_TEST_CONFIG_FILE=%s\n' % test_config_file
+        stmts += 'export PATH=${PATH}:$HOME/.local/bin\n'
+        stmts += 'export PYTHON_EGG_CACHE=%s\n' % egg_cache_dir
+        append_to_file(opts, stmts, login_cfg_file)
 
 
 def swift_setup_configs(opts):
