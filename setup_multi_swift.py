@@ -96,12 +96,11 @@ def create_file_with_gb_size(opts, file_path, gb_size):
         print('create_file_with_gb_size: %s %s (%s)' % (file_path,
                                                         gb_size,
                                                         str(gb_size_in_bytes)))
-    else:
-        if swift_is_exec_mode(opts):
-            with open(file_path, 'w') as f:
-                f.truncate(gb_size_in_bytes)
-        elif swift_is_preview_mode(opts):
-            print("open('%s','w'); truncate(%d)" % (file_path, gb_size_in_bytes))
+    elif swift_is_exec_mode(opts):
+        with open(file_path, 'w') as f:
+            f.truncate(gb_size_in_bytes)
+    elif swift_is_preview_mode(opts):
+        print("open('%s','w'); truncate(%d)" % (file_path, gb_size_in_bytes))
 
 
 def file_exists(opts, file_path):
@@ -146,17 +145,16 @@ def copy_dir_files(opts, src_dir, dest_dir):
 def copy_all(opts, src_dir, dest_dir, recurse=False):
     if swift_is_logic_mode(opts):
         print('copy_all: %s %s' % (src_dir, dest_dir))
-    else:
-        if swift_is_preview_mode(opts):
-            if recurse:
-                print('cp -R %s/* %s' % (src_dir, dest_dir))
-            else:
-                print('cp %s/* %s' % (src_dir, dest_dir))
-        elif swift_is_exec_mode(opts):
-            if recurse:
-                shutil.copytree(src_dir, dest_dir)
-            else:
-                copy_dir_files(src_dir, dest_dir)
+    if swift_is_preview_mode(opts):
+        if recurse:
+            print('cp -R %s/* %s' % (src_dir, dest_dir))
+        else:
+            print('cp %s/* %s' % (src_dir, dest_dir))
+    elif swift_is_exec_mode(opts):
+        if recurse:
+            shutil.copytree(src_dir, dest_dir)
+        else:
+            copy_dir_files(src_dir, dest_dir)
 
 
 def append_to_file(opts, text_to_append, file_path):
@@ -338,11 +336,6 @@ def swift_uid(opts):
 
 def swift_gid(opts):
     return opts[SWIFT_GID]
-
-
-def create_disks(opts):
-    #TODO: implement create_disks
-    pass
 
 
 def setup_fstab_entries(opts):
