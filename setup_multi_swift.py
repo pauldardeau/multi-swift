@@ -537,9 +537,6 @@ def swift_setup_configs(opts):
     cd ${SWIFT1_REPO_DIR}/doc/saio/bin; cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
 
     cd ${SWIFT1_REPO_DIR}/doc/saio/bin; cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
-
-    cd ${SWIFT1_USER_LOCAL_BIN}; 
-    rm resetswift;
     """
     file_to_delete = os.path.join(home_local_bin, 'resetswift')
     delete_file_if_exists(opts, file_to_delete)
