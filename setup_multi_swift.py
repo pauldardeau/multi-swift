@@ -1,5 +1,6 @@
 #
 #
+# TODO: call setup_bashrc
 #
 
 import glob
@@ -454,15 +455,6 @@ def swift_create_directories(opts):
     #chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
     change_owner(opts, SWIFT1_DISK_DIR, user_name, group_name, True)
 
-#******************************************************************************
-
-#SWIFT1_USER_HOME="/home/${SWIFT1_USER}"
-#SWIFT1_USER_LOCAL_BIN="${SWIFT1_USER_HOME}/.local/bin"
-#mkdir -p ${SWIFT1_USER_LOCAL_BIN}
-#SWIFT1_LOGIN_CONFIG="${SWIFT1_USER_HOME}/.bashrc"
-#SWIFT1_REPO_DIR="${SWIFT1_USER_HOME}/swift"
-
-#******************************************************************************
 
 def exec_as_user(opts, cmd, exec_user):
     if swift_is_logic_mode(opts):
