@@ -375,6 +375,7 @@ def setup_fstab_entries(opts):
     disk_base_dir = swift_disk_base_dir(opts)
     dev_letter = swift_device_letter(opts)
     for x in range(swift_disk_count(opts)):
+        #TODO: fix device number 1 below
         device_spec = '%s/%s-disk1' % (disk_base_dir, user)
         mount_point = '%s/sd%s1' % (mount_base_dir, str(dev_letter))
         fs_entry = '%s %s %s %s\n' % (device_spec,
@@ -473,6 +474,8 @@ def exec_as_user(opts, cmd, exec_user):
 
 
 def setup_local_swift_repo(opts):
+    if swift_is_logic_mode(opts):
+        print('setup local swift repo')
     user_home_dir = swift_home_dir(opts)
     if dir_exists(user_home_dir):
         cmd = 'cd %s && git pull' % user_home_dir
@@ -482,6 +485,7 @@ def setup_local_swift_repo(opts):
 
 
 def setup_bashrc(opts):
+    #TODO: implement setup_bashrc
     env_var_stmts = '' 
     #env_var_stmts += 'export SAIO_BLOCK_DEVICE=%s' % ??? 
     env_var_stmts += 'export SWIFT_TEST_CONFIG_FILE=%s' % swift_test_config_file(opts) 
@@ -545,6 +549,7 @@ def swift_setup_configs(opts):
 
     #============================    START   ======================
     mount_base_dir = swift_mount_base_dir(opts)
+    #TODO: implement creation of resetswift script
     """
     swift-init all stop
     # Remove the following line if you did not set up rsyslog for individual logging:
@@ -613,8 +618,15 @@ def swift_setup_configs(opts):
     replacements['6022'] = str(6022+port_adjust)
     replacements['6032'] = str(6032+port_adjust)
     replacements['6042'] = str(6042+port_adjust)
-    #replace_all
-    print('replacements: %s' % repr(replacements))
+
+    if swift_is_logic_mode(opts):
+        print('replacements: %s' % repr(replacements))
+    elif swift_is_preview_mode(opts):
+        #TODO: implement preview mode
+        pass
+    elif swift_is_exec_mode(opts):
+        #TODO: implement exec mode
+        pass
 
 
 def get_swift_users(opts):
