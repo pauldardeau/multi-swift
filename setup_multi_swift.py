@@ -35,6 +35,11 @@ SWIFT_PORT_ADJUST = 'swift_port_adjust'
 SWIFT_PROXY_PORT_ADJUST = 'swift_proxy_port_adjust'
 SWIFT_REPO_NAME = 'swift_repo_name'
 SWIFT_RUN_MODE = 'swift_run_mode'
+SWIFT_DEVICE_LETTER = 'swift_device_letter'
+
+
+def swift_device_letter(opts):
+    return opts[SWIFT_DEVICE_LETTER]
 
 
 def swift_run_mode(opts):
@@ -277,9 +282,17 @@ def swift_mount_options(opts):
 
 
 def fstab_entry(opts, disk_number, device):
-    device_spec = '%s/%s-disk%d' % (swift_disk_base_dir(opts), swift_user(opts), disk_number)
-    mount_point = '%s/sdb2' % swift_mount_base_dir(opts)  #TODO: fstab_entry: fix sdb2
-    return '%s %s %s %s' % (device_spec,mount_point,swift_fs_type(opts),swift_mount_options(opts))
+    device_spec = '%s/%s-disk%d' % (swift_disk_base_dir(opts),
+                                    swift_user(opts),
+                                    disk_number)
+    dev_letter = swift_device_letter(opts)
+    mount_point = '%s/sd%s%s' % (swift_mount_base_dir(opts),
+                                 str(dev_letter),
+                                 str(disk_number))
+    return '%s %s %s %s' % (device_spec,
+                            mount_point,
+                            swift_fs_type(opts),
+                            swift_mount_options(opts))
 
 
 def mkfs_command(opts):
@@ -345,10 +358,14 @@ def setup_fstab_entries(opts):
     user = swift_user(opts)
     mount_base_dir = swift_mount_base_dir(opts)
     disk_base_dir = swift_disk_base_dir(opts)
+    dev_letter = swift_device_letter(opts)
     for x in range(swift_disk_count(opts)):
         device_spec = '%s/%s-disk1' % (disk_base_dir, user)
-        mount_point = '%s/sdb1' % (mount_base_dir)
-        fs_entry = '%s %s %s %s\n' % (device_spec, mount_point, fs_type, mount_options)
+        mount_point = '%s/sd%s1' % (mount_base_dir, str(dev_letter))
+        fs_entry = '%s %s %s %s\n' % (device_spec,
+                                      mount_point,
+                                      fs_type,
+                                      mount_options)
         fstab_entries += fs_entry
     append_to_file(opts, fstab_entries, '/etc/fstab')
 
@@ -385,12 +402,17 @@ def swift_create_directories(opts):
     setup_fstab_entries(opts)
 
     mount_base_dir = swift_mount_base_dir(opts)
+    dev_letter = swift_device_letter(opts)
 
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
         SWIFT1_DISK_DIR = '%s/%s_%s' % (disk_base_dir, user_name, disk_num)
         disk_dir = '%s/%s_%s' % (disk_base_dir, user_name, disk_num)
-        mount_dir = '%s/sdb%s/%s_%s' % (mount_base_dir, disk_num, user_name, disk_num)
+        mount_dir = '%s/sd%s%s/%s_%s' % (mount_base_dir,
+                                         str(dev_letter),
+                                         disk_num,
+                                         user_name,
+                                         disk_num)
         create_dir(opts, mount_dir) 
         change_owner(opts, mount_dir, user_name, group_name)
         create_link(opts, mount_dir, disk_dir)
@@ -403,7 +425,11 @@ def swift_create_directories(opts):
 
     for x in range(swift_disk_count(opts)):
         disk_num = '%d' % (x+1)
-        dir_path = '%s/%s_%s/node/sdb%s' % (disk_base_dir, user_name, disk_num, disk_num)
+        dir_path = '%s/%s_%s/node/sd%s%s' % (disk_base_dir,
+                                            user_name,
+                                            disk_num,
+                                            str(dev_letter),
+                                            disk_num)
         create_dir(opts, dir_path)
 
     #PJD: SWIFT1_DISK_DIR doesn't seem correct here
@@ -609,8 +635,14 @@ def main():
 
     port_adjust = 100
     proxy_port_adjust = 10
+    device_letter = 'b'  # as in sdb2
+    #                              ^
+    #                              |
+    #                              |
 
     swift_users = get_swift_users(opts)
+
+    # check whether all users exist in system
     non_existent_users = []
 
     for swift_user in swift_users:
@@ -623,13 +655,17 @@ def main():
             print(invalid_user)
         sys.exit(1)
 
+    # setup swift for each system user
     for swift_user in get_swift_users(opts):
         opts[SWIFT_USER_NAME] = swift_user
         opts[SWIFT_PORT_ADJUST] = port_adjust
         opts[SWIFT_PROXY_PORT_ADJUST] = proxy_port_adjust
+        opts[SWIFT_DEVICE_LETTER] = device_letter
         swift_setup_environment(opts)
         port_adjust += 100
         proxy_port_adjust += 10
+        # advance device letter (e.g., 'b' to 'c')
+        device_letter = chr(ord(device_letter)+1)
 
 
 if __name__=='__main__':
