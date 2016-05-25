@@ -1,6 +1,7 @@
 #
 #
 # TODO: call setup_bashrc
+# TODO: setup of memcached
 #
 
 import glob
@@ -538,47 +539,70 @@ def swift_setup_configs(opts):
 
     cd ${SWIFT1_REPO_DIR}/doc/saio/bin; cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
     """
-    file_to_delete = os.path.join(home_local_bin, 'resetswift')
-    delete_file_if_exists(opts, file_to_delete)
 
-    #============================    START   ======================
-    mount_base_dir = swift_mount_base_dir(opts)
-    #TODO: implement creation of resetswift script
-    """
-    swift-init all stop
-    # Remove the following line if you did not set up rsyslog for individual logging:
-    umount /mnt/sdb*
-    # If you are using a loopback device set SAIO_BLOCK_DEVICE to "/srv/swift-disk"
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk1}
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk2}
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk3}
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk4}
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk5}
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk6}
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk7}
-    mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk8}
-    mount /mnt/sdb*
-    mkdir -p /mnt/sdb1/swift1_1 /mnt/sdb1/swift1_2 /mnt/sdb1/swift1_3 /mnt/sdb1/swift1_4
-    mkdir -p /mnt/sdb5/swift1_5 /mnt/sdb6/swift1_6 /mnt/sdb7/swift1_7 /mnt/sdb8/swift1_8
+    resetswift_file = os.path.join(home_local_bin, 'resetswift')
+    delete_file_if_exists(opts, resetswift_file)
 
-    chown -R swift1:swift /mnt/sdb*
-    mkdir -p /srv/swift1_1/node/sdb1 /srv/swift1_5/node/sdb5 \
-             /srv/swift1_2/node/sdb2 /srv/swift1_6/node/sdb6 \
-             /srv/swift1_3/node/sdb3 /srv/swift1_7/node/sdb7 \
-             /srv/swift1_4/node/sdb4 /srv/swift1_8/node/sdb8
-    rm -f /var/log/debug /var/log/messages /var/log/rsyncd.log /var/log/syslog
-    find /var/cache/swift1* -type f -name *.recon -exec rm -f {} \;
-    if [ "`type -t systemctl`" == "file" ]; then
-        systemctl restart rsyslog
-        systemctl restart memcached
-    else
-        service rsyslog restart
-        /etc/init.d/memcached restart swift1
-    fi
-    EOF
-    """
-    #=========================    STOP  =======================
+    stmts = ''
+    stmts += '#!/bin/sh\n'
+    stmts += 'swift-init all stop\n'
+    stmts += '# Remove the following line if you did not set up rsyslog for individual logging:\n'
+    stmts += 'sudo umount /mnt/sdb*\n'
+    stmts += '# If you are using a loopback device set SAIO_BLOCK_DEVICE to "/srv/swift-disk"\n'
+    #TODO: looks like mistake in expression below
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/%s-disk1}\n' % user
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk2}\n'
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk3}\n'
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk4}\n'
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk5}\n'
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk6}\n'
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk7}\n'
+    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk8}\n'
+    stmts += 'mount /mnt/sdb*\n'
+    stmts += 'mkdir -p /mnt/sdb1/%s_1\n' % user
+    stmts += 'mkdir -p /mnt/sdb1/swift1_2\n'
+    stmts += 'mkdir -p /mnt/sdb1/swift1_3\n'
+    stmts += 'mkdir -p /mnt/sdb1/swift1_4\n'
+    stmts += 'mkdir -p /mnt/sdb5/swift1_5\n'
+    stmts += 'mkdir -p /mnt/sdb6/swift1_6\n'
+    stmts += 'mkdir -p /mnt/sdb7/swift1_7\n'
+    stmts += 'mkdir -p /mnt/sdb8/swift1_8\n'
+    stmts += '\n'
+    stmts += 'chown -R %s:%s /mnt/sdb*\n' % (user,group)
+    stmts += 'mkdir -p /srv/%s_1/node/sdb1\n' % user
+    stmts += 'mkdir -p /srv/swift1_2/node/sdb2\n'
+    stmts += 'mkdir -p /srv/swift1_3/node/sdb3\n'
+    stmts += 'mkdir -p /srv/swift1_4/node/sdb4\n'
+    stmts += 'mkdir -p /srv/swift1_5/node/sdb5\n'
+    stmts += 'mkdir -p /srv/swift1_6/node/sdb6\n'
+    stmts += 'mkdir -p /srv/swift1_7/node/sdb7\n'
+    stmts += 'mkdir -p /srv/swift1_8/node/sdb8\n'
 
+    #TODO: these are system level files. probably not the correct thing
+    stmts += 'rm -f /var/log/debug\n'
+    stmts += 'rm -f /var/log/messages\n'
+    stmts += 'rm -f /var/log/rsyncd.log\n'
+    stmts += 'rm -f /var/log/syslog\n'
+
+    stmts += 'find /var/cache/%s* -type f -name *.recon -exec rm -f {} \;\n' % user
+
+    stmts += 'if [ "`type -t systemctl`" == "file" ]; then\n'
+    stmts += '    systemctl restart rsyslog\n'
+    stmts += '    systemctl restart memcached\n'
+    stmts += 'else\n'
+    stmts += '    service rsyslog restart\n'
+    stmts += '    /etc/init.d/memcached restart %s\n' % user
+    stmts += 'fi\n'
+
+    if swift_is_logical_mode(opts):
+        print('create new resetswift script at %s' % resetswift_file)
+    elif swift_is_preview_mode(opts):
+        print('cat >> %s << EOF\n' % resetswift_file)
+        print(stmts)
+        print('EOF\n')
+    elif swift_is_exec_mode(opts):
+        with open(resetswift_file, 'w') as f:
+            f.write(stmts)
     #chmod +x ${SWIFT1_USER_LOCAL_BIN}/*
 
     #**********************************************************************************************
