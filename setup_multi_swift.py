@@ -1,6 +1,8 @@
 #
 #
 # TODO: call setup_bashrc
+# TODO: look for duplicated code/logic
+# TODO: check that all functions are called
 # TODO: setup of memcached
 #
 
@@ -269,7 +271,7 @@ def dir_replace_all(opts, dir_path, replacements):
         dir_listings = os.listdir(dir_path)
         for dir_listing in dir_listings:
             path_dir_listing = os.path.join(dir_path, dir_listing)
-            # it would also be nice to verify that file is a text file
+            # it would be good to verify that file is a text file
             if os.path.isfile(path_dir_listing): 
                 file_replace(opts, path_dir_listing, replacements)
 
@@ -488,7 +490,7 @@ def setup_bashrc(opts):
         login_cfg_file = os.path.join(home_dir, '.bashrc')
         test_config_file = os.path.join(swift_config_dir(opts), 'test.conf')
         egg_cache_dir = os.path.join(home_dir, 'tmp')
-        disk_path = 'swift-disk1'  #TODO: fix this
+        disk_path = 'swift-disk1'  #TODO: fix this (disk1)
         saio_block_device = os.path.join(swift_disk_base_dir(opts),disk_path)
         stmts  = 'export SAIO_BLOCK_DEVICE=%s\n' % saio_block_device
         stmts += 'export SWIFT_TEST_CONFIG_FILE=%s\n' % test_config_file
@@ -554,6 +556,7 @@ def swift_setup_configs(opts):
     resetswift_file = os.path.join(home_local_bin, 'resetswift')
     delete_file_if_exists(opts, resetswift_file)
 
+    #TODO: change out hard-coded values in resetswift
     stmts = ''
     stmts += '#!/bin/sh\n'
     stmts += 'swift-init all stop\n'
@@ -617,15 +620,6 @@ def swift_setup_configs(opts):
 
     make_dir_files_executable(opts, home_local_bin)
 
-    #**********************************************************************************************
-    #MODIFICATIONS TO THE SECOND REPOSITORY
-    # Changing the ports to 60** to 67** series
-    # and modifying the paths to suit swift2
-    #
-    #TODO: refine sed scripts to work efficiently and avoid the rework of replacing the wrong updates
-    #**********************************************************************************************
-    #cd ${SWIFT1_REPO_DIR}; su - swift1;
-
     port_adjust = swift_port_adjust(opts)
     proxy_port_adjust = swift_proxy_port_adjust(opts)
 
@@ -656,6 +650,7 @@ def swift_setup_configs(opts):
         pass
     elif swift_is_exec_mode(opts):
         #TODO: implement exec mode
+        #cd ${SWIFT1_REPO_DIR}; su - swift1;
         pass
 
 
