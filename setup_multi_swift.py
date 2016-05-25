@@ -497,6 +497,17 @@ def setup_bashrc(opts):
         append_to_file(opts, stmts, login_cfg_file)
 
 
+def make_dir_files_executable(opts, dir_path):
+    if swift_is_logical_mode(opts):
+        print('make executable %s/*' % dir_path)
+    else:
+        cmd = 'chmod +x %s/*' % dir_path
+        if swift_is_preview_mode(opts):
+            print(cmd)
+        elif swift_is_exec_mode(opts):
+            os.system(cmd)
+
+
 def swift_setup_configs(opts):
     repo_dir = swift_local_repo(opts)
     copy_file(opts,
@@ -603,7 +614,8 @@ def swift_setup_configs(opts):
     elif swift_is_exec_mode(opts):
         with open(resetswift_file, 'w') as f:
             f.write(stmts)
-    #chmod +x ${SWIFT1_USER_LOCAL_BIN}/*
+
+    make_dir_files_executable(opts, home_local_bin)
 
     #**********************************************************************************************
     #MODIFICATIONS TO THE SECOND REPOSITORY
