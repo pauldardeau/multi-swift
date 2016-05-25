@@ -542,55 +542,45 @@ def swift_setup_configs(opts):
     home_local_bin = swift_home_local_bin_dir(opts)
 
     """
-    EXPORT_SWIFT1_PATH="export PATH=${PATH}:${SWIFT1_USER_LOCAL_BIN}:${SWIFT1_USER_HOME}/swift/bin"
-
     su - ${SWIFT1_USER} -c 'cd ${SWIFT1_USER_HOME}/swift;'
     python setup.py develop --user
     #PJD: mistake on next line (mixup of SWIFT1 and SWIFT2)
     cd ${SWIFT1_USER_HOME}; chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT2_USER_LOCAL_BIN}
-    cd ${SWIFT1_REPO_DIR}/doc/saio/bin; cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
-
     cd ${SWIFT1_REPO_DIR}/doc/saio/bin; cp * ${SWIFT1_USER_LOCAL_BIN}; cd -
     """
 
     resetswift_file = os.path.join(home_local_bin, 'resetswift')
     delete_file_if_exists(opts, resetswift_file)
 
+    mount_base_dir = swift_mount_base_dir(opts)
+    disk_base_dir = swift_disk_base_dir(opts)
+
     #TODO: change out hard-coded values in resetswift
     stmts = ''
     stmts += '#!/bin/sh\n'
     stmts += 'swift-init all stop\n'
     stmts += '# Remove the following line if you did not set up rsyslog for individual logging:\n'
-    stmts += 'sudo umount /mnt/sdb*\n'
+    stmts += 'sudo umount %s/sdb*\n' % mount_base_dir
+    #TODO: correct comment below
     stmts += '# If you are using a loopback device set SAIO_BLOCK_DEVICE to "/srv/swift-disk"\n'
     #TODO: looks like mistake in expression below
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/%s-disk1}\n' % user
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk2}\n'
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk3}\n'
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk4}\n'
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk5}\n'
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk6}\n'
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk7}\n'
-    stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-/srv/swift1-disk8}\n'
-    stmts += 'mount /mnt/sdb*\n'
-    stmts += 'mkdir -p /mnt/sdb1/%s_1\n' % user
-    stmts += 'mkdir -p /mnt/sdb1/swift1_2\n'
-    stmts += 'mkdir -p /mnt/sdb1/swift1_3\n'
-    stmts += 'mkdir -p /mnt/sdb1/swift1_4\n'
-    stmts += 'mkdir -p /mnt/sdb5/swift1_5\n'
-    stmts += 'mkdir -p /mnt/sdb6/swift1_6\n'
-    stmts += 'mkdir -p /mnt/sdb7/swift1_7\n'
-    stmts += 'mkdir -p /mnt/sdb8/swift1_8\n'
+
+    for x in range(swift_disk_count(opts)):
+        disk_num = str(x + 1)
+        stmts += 'mkfs.xfs -f ${SAIO_BLOCK_DEVICE:-%s/%s-disk%s}\n' % (disk_base_dir,user,disk_num)
+
+    stmts += 'mount %s/sdb*\n' % mount_base_dir
+
+    for x in range(swift_disk_count(opts)):
+        disk_num = str(x + 1)
+        stmts += 'mkdir -p %s/sdb%s/%s_%s\n' % (mount_base_dir,disk_num,user,disk_num)
+
     stmts += '\n'
-    stmts += 'chown -R %s:%s /mnt/sdb*\n' % (user,group)
-    stmts += 'mkdir -p /srv/%s_1/node/sdb1\n' % user
-    stmts += 'mkdir -p /srv/swift1_2/node/sdb2\n'
-    stmts += 'mkdir -p /srv/swift1_3/node/sdb3\n'
-    stmts += 'mkdir -p /srv/swift1_4/node/sdb4\n'
-    stmts += 'mkdir -p /srv/swift1_5/node/sdb5\n'
-    stmts += 'mkdir -p /srv/swift1_6/node/sdb6\n'
-    stmts += 'mkdir -p /srv/swift1_7/node/sdb7\n'
-    stmts += 'mkdir -p /srv/swift1_8/node/sdb8\n'
+    stmts += 'chown -R %s:%s %s/sdb*\n' % (user,group, mount_base_dir)
+
+    for x in range(swift_disk_count(opts)):
+        disk_num = str(x + 1)
+        stmts += 'mkdir -p %s/%s_%s/node/sdb%s\n' % (disk_base_dir,user,disk_num,disk_num)
 
     #TODO: these are system level files. probably not the correct thing
     stmts += 'rm -f /var/log/debug\n'
