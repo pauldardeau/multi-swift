@@ -1,6 +1,5 @@
 #
 #
-# TODO: call setup_bashrc
 # TODO: look for duplicated code/logic
 # TODO: check that all functions are called
 # TODO: setup of memcached
@@ -457,6 +456,10 @@ def swift_create_directories(opts):
     #PJD: SWIFT1_DISK_DIR doesn't seem correct here
     #chown -R ${SWIFT1_USER}:${SWIFT_GROUP} ${SWIFT1_DISK_DIR}
     change_owner(opts, SWIFT1_DISK_DIR, user_name, group_name, True)
+
+    setup_local_git_repo(opts)
+
+    setup_bashrc(opts)
 
 
 def exec_as_user(opts, cmd, exec_user):
